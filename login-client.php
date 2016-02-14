@@ -24,6 +24,15 @@ function extractInfo($credentials, $options) {
 			$data["pages"][$pageId]["posts"] = array();
 			$data["pages"][$pageId]["likes"] = array();
 		}
+?>
+<script>
+	function pageScroll() {
+	    window.scrollBy(0,10);
+	    scrolldelay = setTimeout(pageScroll,10);
+	}
+	pageScroll();
+</script>
+<?php
 		$responsePost = $fb->get('/' . $pageId . '/feed');
 		$postEdge = $responsePost->getGraphEdge();
 		do {
@@ -113,12 +122,11 @@ function extractInfo($credentials, $options) {
 }
 
 $options = array();
-if ($argv) {
+if (isset($argv)) {
 	$options = getopt("i:c:n:r:");
 } else {
 	$options = $_REQUEST;
 }
-var_dump($options);
 if (isset($options['i'])) {
 	if (isset($options['c'])) {
 		$credentials = parse_ini_file($options['c']);

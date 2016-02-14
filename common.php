@@ -19,6 +19,11 @@ function eachEdge($response, $func, $maxPages = null) {
 }
 
 function output($text) {
-	echo $text . "\n";
-	flush();
+	echo $text;
+	if ($_REQUEST) {
+		echo "<br>";
+		flush();
+	} else {
+		echo "\n";
+	}
 }
