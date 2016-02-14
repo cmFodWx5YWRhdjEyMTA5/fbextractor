@@ -6,140 +6,124 @@ error_reporting(E_ALL);
 date_default_timezone_set('America/New_York');
 require_once __DIR__ . '/vendor/autoload.php';
 include 'common.php';
-$fb = new Facebook\Facebook($credentials);
 
-// Sets the default fallback access token so we don't have to pass it to each request
-$fb->setDefaultAccessToken('CAASlyODtSVsBAMtOFpREc0fU8wDZBGggL1Fn1cZB8eSzZCJFwHqOxf9LvHput0AX5UfKlje6UtykojvKnmVdmhFPit627SbUpMwUdg6zxDlDmGEaw6yuWiZCZATFlAbQi2rDJokTxugZBUz9ENdZAhEB8sIJ32GbqJny8Dfc0OVcd9yNgPA8q5EZACMMqQ0IbZC0ZD');
-
-function extractInfo($pageId) {
-	global $fb;
-	$data = array();
+function extractInfo($credentials, $options) {
 	try {
-		$data["pages"] = array();
-		$data["pages"][$pageId] = array();
-		$data["pages"][$pageId]["posts"] = array();
-		$data["pages"][$pageId]["likes"] = array();
+		$fb = new Facebook\Facebook($credentials);
+		$pageId = $options['i'];
+		$data = array();
+		$postCount = 0;
+		if (isset($options['r'])) {
+			unlink($pageId);
+		}
+		if (file_exists($pageId)) {
+			$data = json_decode(file_get_contents($pageId), true);
+		} else {
+			$data["pages"] = array();
+			$data["pages"][$pageId] = array();
+			$data["pages"][$pageId]["posts"] = array();
+			$data["pages"][$pageId]["likes"] = array();
+		}
 		$responsePost = $fb->get('/' . $pageId . '/feed');
 		$postEdge = $responsePost->getGraphEdge();
 		do {
 			foreach ($postEdge as $post) {
-			    $data["pages"][$pageId]["posts"][$post['id']] = array();
-				$data["pages"][$pageId]["posts"][$post['id']]["comments"] = array();
-				$data["pages"][$pageId]["posts"][$post['id']]["likes"] = array();
-				$data["pages"][$pageId]["posts"][$post['id']]["data"] = $post->asArray();
-				$responseComment = $fb->get('/' . $post['id'] . '/comments');
-				$commentEdge = $responseComment->getGraphEdge();
-				do {
-					foreach ($commentEdge as $comment) {
-						$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']] = array();
-						$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"] = array();
-						$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["likes"] = array();
-						$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["data"] = $comment->asArray();
-						$responseReplies = $fb->get('/' . $comment['id'] . '/comments');
-						$replyEdge = $responseReplies->getGraphEdge();
+				$postCount++;
+				output('N: ' . $postCount . ' P: ' . $post['id']);
+				if ( (isset($options['n']) && $postCount <= $options['n']) ||  !isset($options['n']) ) {
+					if (!isset($data["pages"][$pageId]["posts"][$post['id']])) {
+						$data["pages"][$pageId]["posts"][$post['id']] = array();
+						$data["pages"][$pageId]["posts"][$post['id']]["comments"] = array();
+						$data["pages"][$pageId]["posts"][$post['id']]["likes"] = array();
+						$data["pages"][$pageId]["posts"][$post['id']]["share"] = array();
+						$data["pages"][$pageId]["posts"][$post['id']]["data"] = $post->asArray();
+						$responseComment = $fb->get('/' . $post['id'] . '/comments');
+						$commentEdge = $responseComment->getGraphEdge();
 						do {
-							foreach ($replyEdge as $reply) {
-								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']] = array();
-								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["likes"] = array();
-								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["data"] = $reply->asArray();
-								$responseReplyLikes = $fb->get('/' . $reply['id'] . '/likes');
-								$replyLikeEdge = $responseReplyLikes->getGraphEdge();
+							foreach ($commentEdge as $comment) {
+								output('N: ' . $postCount . ' P: ' . $post['id'] . ' C: ' . $comment['id']);
+								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']] = array();
+								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"] = array();
+								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["likes"] = array();
+								$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["data"] = $comment->asArray();
+								$responseReplies = $fb->get('/' . $comment['id'] . '/comments');
+								$replyEdge = $responseReplies->getGraphEdge();
 								do {
-									foreach ($replyLikeEdge as $replyLike) {
-										array_push($data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["likes"], $replyLike->asArray());
+									foreach ($replyEdge as $reply) {
+										output('N: ' . $postCount . ' P: ' . $post['id'] . ' C: ' . $comment['id'] . ' R: ' . $reply['id']);
+										$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']] = array();
+										$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["likes"] = array();
+										$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["data"] = $reply->asArray();
+										$responseReplyLikes = $fb->get('/' . $reply['id'] . '/likes');
+										$replyLikeEdge = $responseReplyLikes->getGraphEdge();
+										do {
+											foreach ($replyLikeEdge as $replyLike) {
+												output('N: ' . $postCount . ' P: ' . $post['id'] . ' C: ' . $comment['id'] . ' R: ' . $reply['id'] . ' L: ' . $replyLike['id']);
+												array_push($data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["likes"], $replyLike->asArray());
+											}
+										} while ($replyLikeEdge = $fb->next($replyLikeEdge));
 									}
-								} while ($replyLikeEdge = $fb->next($replyLikeEdge));
-							}
-						} while ($replyEdge = $fb->next($replyEdge));
-						$responseCommentLikes = $fb->get('/' . $comment['id'] . '/likes');
-						$commentLikeEdge = $responseCommentLikes->getGraphEdge();
+								} while ($replyEdge = $fb->next($replyEdge));
+								$responseCommentLikes = $fb->get('/' . $comment['id'] . '/likes');
+								$commentLikeEdge = $responseCommentLikes->getGraphEdge();
+								do {
+									foreach ($commentLikeEdge as $commentLike) {
+										output('N: ' . $postCount . ' P: ' . $post['id'] . ' C: ' . $comment['id'] . ' L: ' . $commentLike['id']);
+										array_push($data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["likes"], $commentLike->asArray());
+									}
+								} while ($commentLikeEdge = $fb->next($commentLikeEdge));
+						  	}
+						} while ($commentEdge = $fb->next($commentEdge));
+						$responsePostLikes = $fb->get('/' . $post['id'] . '/likes');
+						$postLikeEdge = $responsePostLikes->getGraphEdge();
 						do {
-							foreach ($commentLikeEdge as $commentLike) {
-								array_push($data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["likes"], $commentLike->asArray());
+							foreach ($postLikeEdge as $postLike) {
+								output('N: ' . $postCount . ' P: ' . $post['id'] . ' L: ' . $postLike['id']);
+								array_push($data["pages"][$pageId]["posts"][$post['id']]["likes"], $postLike->asArray());
 							}
-						} while ($commentLikeEdge = $fb->next($commentLikeEdge));
-				  	}
-				} while ($commentEdge = $fb->next($commentEdge));
-				$responsePostLikes = $fb->get('/' . $post['id'] . '/likes');
-				$postLikeEdge = $responsePostLikes->getGraphEdge();
-				do {
-					foreach ($postLikeEdge as $postLike) {
-						array_push($data["pages"][$pageId]["posts"][$post['id']]["likes"], $postLike->asArray());
+						} while ($postLikeEdge = $fb->next($postLikeEdge));
+						$responsePostShares = $fb->get('/' . $post['id'] . '/sharedposts');
+						$postShareEdge = $responsePostShares->getGraphEdge();
+						do {
+							foreach ($postShareEdge as $postShare) {
+								output('N: ' . $postCount . ' P: ' . $post['id'] . ' S: ' . $postShare['id']);
+								array_push($data["pages"][$pageId]["posts"][$post['id']]["share"], $postShare->asArray());
+							}
+						} while ($postShareEdge = $fb->next($postShareEdge));
+						file_put_contents($pageId, json_encode($data,TRUE));
 					}
-				} while ($postLikeEdge = $fb->next($postLikeEdge));
-		 	}
+			 	} else {
+			 		file_put_contents($pageId, json_encode($data,TRUE));
+					return '{"status":"OK", "message":"<a href=\'' . $pageId . '\'>Parial file</a>", "data":"' . json_encode($data,TRUE) . '"}';
+			 	}
+			}
 		} while ($postEdge = $fb->next($postEdge));
 		echo json_encode($data);
 	} catch(Facebook\Exceptions\FacebookResponseException $e) {
 	  // When Graph returns an error
-	  output('Graph returned an error: ' . $e->getMessage());
+	  output('{"status":"error", "message":"Graph returned an error: ' . $e->getMessage() . '"}');
 	  exit;
 	} catch(Facebook\Exceptions\FacebookSDKException $e) {
 	  // When validation fails or other local issues
-	  output('Facebook SDK returned an error: ' . $e->getMessage());
+	  output('{"status":"error", "message":"Facebook SDK returned an error: ' . $e->getMessage() . '"}');
 	  exit;
 	}
+	file_put_contents($pageId, json_encode($data,TRUE));
+	return '{"status":"OK", "message":"<a href=\'' . $pageId . '\'>Full file</a>", "data":"' . json_encode($data,TRUE) . '"}';
 }
 
-function extractAsyncInfo($pageId) {
-	global $fb;
-	$data = array();
-	try {
-		$data["pages"] = array();
-		$data["pages"][$pageId] = array();
-		$data["pages"][$pageId]["posts"] = array();
-		$data["pages"][$pageId]["likes"] = array();
-		$responsePost = $fb->get('/' . $pageId . '/feed');
-		// $userNode = $response->getGraphUser();
-		// $graphObject = $response->getGraphObject();
-		eachEdge($responsePost, function($post){
-			global $fb;
-			$data["pages"][$pageId]["posts"][$post['id']] = array();
-			$data["pages"][$pageId]["posts"][$post['id']]["comments"] = array();
-			$data["pages"][$pageId]["posts"][$post['id']]["likes"] = array();
-			$data["pages"][$pageId]["posts"][$post['id']]["data"] = $post->asArray();
-			$responseComment = $fb->get('/' . $post['id'] . '/comments');
-			eachEdge($responseComment, function($comment){
-				global $fb;
-				$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']] = array();
-				$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"] = array();
-				$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["likes"] = array();
-				$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["data"] = $comment->asArray();
-				$responseReplies = $fb->get('/' . $comment['id'] . '/comments');
-				eachEdge($responseReplies, function($reply){
-					global $fb;
-					$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']] = array();
-					$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["likes"] = array();
-					$data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["data"] = $reply->asArray();
-					$responseReplyLikes = $fb->get('/' . $reply['id'] . '/likes');
-				  	eachEdge($responseReplyLikes, function($replyLike){
-				  		array_push($data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["replies"][$reply['id']]["likes"], $replyLike->asArray());
-				  	});
-				});
-				$responseCommentLikes = $fb->get('/' . $comment['id'] . '/likes');
-			  	eachEdge($responseCommentLikes, function($commentLike){
-			  		array_push($data["pages"][$pageId]["posts"][$post['id']]["comments"][$comment['id']]["likes"], $commentLike->asArray());
-			  	});
-			});
-			$responsePostLikes = $fb->get('/' . $post['id'] . '/likes');
-			eachEdge($responsePostLikes, function($postLike){
-				array_push($data["pages"][$pageId]["posts"][$post['id']]["likes"], $postLike->asArray());
-			});
-		});
-		echo json_encode($data);
-	} catch(Facebook\Exceptions\FacebookResponseException $e) {
-	  // When Graph returns an error
-	  output('Graph returned an error: ' . $e->getMessage());
-	  exit;
-	} catch(Facebook\Exceptions\FacebookSDKException $e) {
-	  // When validation fails or other local issues
-	  output('Facebook SDK returned an error: ' . $e->getMessage());
-	  exit;
-	}
-}
-
-if (isset($_REQUEST['fbid'])) {
-	extractInfo($_REQUEST['fbid']);
+$options = array();
+if ($argv) {
+	$options = getopt("i:c:n:r:");
 } else {
-	echo 'Please provide the fbid parameter.';
+	$options = $_REQUEST;
+}
+var_dump($options);
+if (isset($options['i'])) {
+	if (isset($options['c'])) {
+		$credentials = parse_ini_file($options['c']);
+	}
+	echo extractInfo($credentials, $options);
+} else {
+	echo '{"status":"error", "message":"Please provide the fbid parameter."}';
 }
