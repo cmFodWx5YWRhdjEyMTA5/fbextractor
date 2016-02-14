@@ -82,8 +82,6 @@ function extractAsyncInfo($pageId) {
 	global $fb;
 	$data = array();
 	try {
-		// 599478056788641 Yo amo los zapatos Colombia
-		// 386909561519447 Carlos Toxtli Page
 		$data["pages"] = array();
 		$data["pages"][$pageId] = array();
 		$data["pages"][$pageId]["posts"] = array();
@@ -137,4 +135,8 @@ function extractAsyncInfo($pageId) {
 	}
 }
 
-extractInfo("386909561519447");
+if (isset($_REQUEST['fbid'])) {
+	extractInfo($_REQUEST['fbid']);
+} else {
+	echo 'Please provide the fbid parameter.'
+}
