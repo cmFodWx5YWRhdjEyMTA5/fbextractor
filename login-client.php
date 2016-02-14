@@ -27,7 +27,7 @@ function extractInfo($credentials, $options) {
 ?>
 <script>
 	function pageScroll() {
-	    window.scrollBy(0,10);
+	    window.scrollBy(0,100);
 	    scrolldelay = setTimeout(pageScroll,10);
 	}
 	pageScroll();
