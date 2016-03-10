@@ -120,10 +120,14 @@ function extractInfo($credentials, $options) {
 							} catch(Exception $e) {
 								output('E: ' . '/' . $post['id'] . '/sharedposts');
 							}
-							file_put_contents($pageId, json_encode($data,TRUE));
+							try {
+								file_put_contents($pageId, json_encode($data,TRUE));
+							} catch(Exception $e) {
+								output('E: ' . 'Error storing the data');
+								file_put_contents($pageId . '_back', serialize($data));
+							}
 						}
 				 	} else {
-				 		file_put_contents($pageId, json_encode($data,TRUE));
 						return '{"status":"OK", "message":"<a href=\'' . $pageId . '\'>Parial file</a>", "data":"' . json_encode($data,TRUE) . '"}';
 				 	}
 				}
