@@ -123,10 +123,10 @@ function extractInfo($credentials, $options) {
 								output('E: ' . '/' . $post['id'] . '/sharedposts');
 							}
 							try {
-								file_put_contents($pageId, json_encode($data,TRUE));
+								file_put_contents($pageId . '-posts.json', json_encode($data,TRUE));
 							} catch(Exception $e) {
 								output('E: ' . 'Error storing the data');
-								file_put_contents($pageId . '_back', serialize($data));
+								file_put_contents($pageId . '-posts.json' . '_back', serialize($data));
 							}
 						}
 				 	} else {
