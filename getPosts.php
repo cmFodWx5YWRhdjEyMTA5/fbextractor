@@ -148,7 +148,7 @@ function extractInfo($credentials, $options) {
 	  output('{"status":"error", "message":"Facebook SDK returned an error: ' . $e->getMessage() . '"}');
 	  exit;
 	}
-	file_put_contents($pageId, json_encode($data,TRUE));
+	file_put_contents($pageId . '-posts.json', json_encode($data,TRUE));
 	return '{"status":"OK", "message":"<a href=\'' . $pageId . '\'>Full file</a>", "data":"' . json_encode($data,TRUE) . '"}';
 }
 
