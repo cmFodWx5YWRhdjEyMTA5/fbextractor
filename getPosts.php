@@ -19,7 +19,7 @@ function extractInfo($credentials, $options) {
 			unlink($pageId);
 		}
 		if (file_exists($pageId)) {
-			$data = json_decode(file_get_contents($pageId), true);
+			$data = json_decode(file_get_contents($pageId . '-posts.json'), true);
 		} else {
 			$data["pages"] = array();
 			$data["pages"][$pageId] = array();
